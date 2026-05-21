@@ -91,7 +91,7 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       // 1. Load cape file list from bundled capu-index.json
       try {
         const files = capuIndexRaw as string[];
-        const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 10000);
+        const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 500);
 
         const technicalTags = new Set([
           "text", "graphics", "font", "brand", "screenshot", "illustration", "design", "graphic",
