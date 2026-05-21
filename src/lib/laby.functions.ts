@@ -20,7 +20,6 @@ function getAppRoot(): string {
   }
   return process.env["APP_ROOT"] ?? cwd;
 }
-const APP_ROOT = getAppRoot();
 
 function adminPb() {
   return new PocketBase(PB_URL);
@@ -92,7 +91,7 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       // Load metadata if available
       let metadata: Record<string, any> = {};
       try {
-        const metadataPath = join(APP_ROOT, "labymod", "all_cloaks.json");
+        const metadataPath = join(getAppRoot(), "labymod", "all_cloaks.json");
         const raw = await readFile(metadataPath, "utf-8");
         const list = JSON.parse(raw);
         if (Array.isArray(list)) {
@@ -108,7 +107,7 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
 
       // 1. Add local cached capes from the /public/capu folder
       try {
-        const capuDirPath = join(APP_ROOT, "public", "capu");
+        const capuDirPath = join(getAppRoot(), "public", "capu");
         const files = await readdir(capuDirPath);
         const pngFiles = files.filter(f => f.endsWith(".png") && f.length > 10);
         
