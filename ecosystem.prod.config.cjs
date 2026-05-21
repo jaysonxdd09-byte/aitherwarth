@@ -11,6 +11,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         VITE_PB_URL: "http://127.0.0.1:8090",
+        PORT: "3000",
+        HOST: "0.0.0.0",
       },
     },
     {

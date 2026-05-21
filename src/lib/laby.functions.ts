@@ -11,6 +11,7 @@ export interface LabyCloak {
 }
 
 const PB_URL = process.env["VITE_PB_URL"] ?? "http://127.0.0.1:8090";
+const APP_ROOT = process.env["APP_ROOT"] ?? process.cwd();
 
 function adminPb() {
   return new PocketBase(PB_URL);
@@ -82,7 +83,7 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       // Load metadata if available
       let metadata: Record<string, any> = {};
       try {
-        const metadataPath = join(process.cwd(), "labymod", "all_cloaks.json");
+        const metadataPath = join(APP_ROOT, "labymod", "all_cloaks.json");
         const raw = await readFile(metadataPath, "utf-8");
         const list = JSON.parse(raw);
         if (Array.isArray(list)) {
@@ -98,7 +99,7 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
 
       // 1. Add local cached capes from the /public/capu folder
       try {
-        const capuDirPath = join(process.cwd(), "public", "capu");
+        const capuDirPath = join(APP_ROOT, "public", "capu");
         const files = await readdir(capuDirPath);
         const pngFiles = files.filter(f => f.endsWith(".png") && f.length > 10);
         
