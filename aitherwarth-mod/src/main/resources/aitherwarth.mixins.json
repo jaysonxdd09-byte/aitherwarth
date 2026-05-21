@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "com.aitherwarth.capes.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "AbstractClientPlayerEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

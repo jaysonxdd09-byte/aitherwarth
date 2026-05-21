@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "aitherwarth-capes",
+  "name": "AitherWarth Capes & Skins",
+  "description": "Client-side Fabric mod to display custom Minecraft capes and skins applied on the AitherWarth website dashboard.",
+  "version": "${version}",
+  "icon": "assets/aitherwarth/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.aitherwarth.capes.AitherWarthCapes"
+    ]
+  },
+  "mixins": [
+    "aitherwarth.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}
