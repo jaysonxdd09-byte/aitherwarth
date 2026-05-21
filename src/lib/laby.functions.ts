@@ -1,6 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
 import PocketBase from "pocketbase";
 
 export interface LabyCloak {
@@ -11,25 +9,6 @@ export interface LabyCloak {
 }
 
 const PB_URL = process.env["VITE_PB_URL"] ?? "http://127.0.0.1:8090";
-
-function getAppRoot(): string {
-  // process.cwd() returns '/' in Cloudflare Workers nodejs_compat mode
-  // Try multiple candidate paths and return first that exists
-  const candidates = [
-    process.env["APP_ROOT"],
-    process.cwd() !== "/" ? process.cwd() : undefined,
-    "/var/www/aitherwarth",
-    "/home/ubuntu/aitherwarth",
-  ].filter(Boolean) as string[];
-
-  for (const p of candidates) {
-    try {
-      const fs = require("node:fs");
-      if (fs.existsSync(p + "/public/capu")) return p;
-    } catch (_) {}
-  }
-  return candidates[0] ?? "/var/www/aitherwarth";
-}
 
 function adminPb() {
   return new PocketBase(PB_URL);
@@ -98,32 +77,34 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       const capes: LabyCloak[] = [];
       const seen = new Set<string>();
 
-      // Load metadata if available
+      // Load metadata from static JSON served by the app itself
       let metadata: Record<string, any> = {};
       try {
-        const metadataPath = join(getAppRoot(), "labymod", "all_cloaks.json");
-        const raw = await readFile(metadataPath, "utf-8");
-        const list = JSON.parse(raw);
-        if (Array.isArray(list)) {
-          list.forEach((item: any) => {
-            if (item.image_hash) {
-              metadata[item.image_hash] = item;
-            }
-          });
+        const metaRes = await fetch("http://localhost:3000/cloaks-meta.json");
+        if (metaRes.ok) {
+          const list = await metaRes.json() as any[];
+          if (Array.isArray(list)) {
+            list.forEach((item: any) => {
+              if (item.image_hash) metadata[item.image_hash] = item;
+            });
+          }
         }
-      } catch (e) {
-        // Metadata not found or invalid, continue
-      }
+      } catch (_) {}
 
-      // 1. Add local cached capes from the /public/capu folder
+      // 1. Load cape file list from pre-generated static index
       try {
-        const capuDirPath = join(getAppRoot(), "public", "capu");
-        const files = await readdir(capuDirPath);
-        const pngFiles = files.filter(f => f.endsWith(".png") && f.length > 10);
-        
-        // Limit to 10000 to prevent browser crash / payload issues
-        const limitedFiles = pngFiles.slice(0, 10000);
-        
+        const indexRes = await fetch("http://localhost:3000/capu-index.json");
+        if (!indexRes.ok) throw new Error(`capu-index.json returned ${indexRes.status}`);
+        const files = await indexRes.json() as string[];
+        const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 10000);
+
+        const technicalTags = new Set([
+          "text", "graphics", "font", "brand", "screenshot", "illustration", "design", "graphic",
+          "digital", "compositing", "software", "poster", "logo", "clipart", "animation", "animated",
+          "drawing", "sketch", "art", "artwork", "frame", "display", "screen", "indoor", "outdoor",
+          "building", "wall", "style", "staring", "domestic"
+        ]);
+
         for (const file of limitedFiles) {
           const hash = file.replace(".png", "");
           if (seen.has(hash)) continue;
@@ -132,34 +113,22 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
           const meta = metadata[hash];
           let name = `Cloak #${hash.slice(0, 6)}`;
           if (meta && meta.tags) {
-            const technicalTags = new Set([
-              "text", "graphics", "font", "brand", "screenshot", "illustration", "design", "graphic",
-              "digital", "compositing", "software", "poster", "logo", "clipart", "animation", "animated",
-              "drawing", "sketch", "art", "artwork", "frame", "display", "screen", "indoor", "outdoor",
-              "building", "wall", "style", "staring", "domestic"
-            ]);
-            
             const rawTags = meta.tags.split(" ");
             const descriptiveTags = rawTags.filter((t: string) => !technicalTags.has(t.toLowerCase()));
-            
-            if (descriptiveTags.length > 0) {
-              // Take up to 3 descriptive words to make names like "Pink Anime Girl"
-              name = descriptiveTags.slice(0, 3).join(" ");
-            } else if (rawTags.length > 0) {
-              // Fallback to first few raw tags if everything was filtered
-              name = rawTags.slice(0, 2).join(" ");
-            }
+            name = descriptiveTags.length > 0
+              ? descriptiveTags.slice(0, 3).join(" ")
+              : rawTags.slice(0, 2).join(" ");
           }
 
           capes.push({
-            id: file, 
-            name: name,
-            renderUrl: `/capu/${file}`, 
+            id: file,
+            name,
+            renderUrl: `/capu/${file}`,
             textureUrl: `/capu/${file}`,
           });
         }
       } catch (e) {
-        console.warn("Failed to read capu directory:", e);
+        console.warn("Failed to load capu-index.json:", e);
       }
 
       // 2. Fetch trending/popular cloaks from laby.net
