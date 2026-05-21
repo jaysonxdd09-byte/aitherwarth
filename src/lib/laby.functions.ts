@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import PocketBase from "pocketbase";
 // These are bundled at build time by Vite — no filesystem access needed at runtime
 import capuIndexRaw from "../../public/capu-index.json";
-import cloaksMeta from "../../public/cloaks-meta.json";
 
 export interface LabyCloak {
   id: string;
@@ -12,6 +11,8 @@ export interface LabyCloak {
 }
 
 const PB_URL = process.env["VITE_PB_URL"] ?? "http://127.0.0.1:8090";
+
+const CAPE_FILES: string[] = (capuIndexRaw as string[]).filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 300);
 
 function adminPb() {
   return new PocketBase(PB_URL);
@@ -80,40 +81,16 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       const capes: LabyCloak[] = [];
       const seen = new Set<string>();
 
-      // Build metadata map from bundled JSON (imported at build time by Vite)
-      const metadata: Record<string, any> = {};
-      if (Array.isArray(cloaksMeta)) {
-        (cloaksMeta as any[]).forEach((item: any) => {
-          if (item.image_hash) metadata[item.image_hash] = item;
-        });
-      }
-
-      // 1. Load cape file list from bundled capu-index.json
+      // 1. Build capes from pre-sliced file list
       try {
-        const files = capuIndexRaw as string[];
-        const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 500);
-
-        const technicalTags = new Set([
-          "text", "graphics", "font", "brand", "screenshot", "illustration", "design", "graphic",
-          "digital", "compositing", "software", "poster", "logo", "clipart", "animation", "animated",
-          "drawing", "sketch", "art", "artwork", "frame", "display", "screen", "indoor", "outdoor",
-          "building", "wall", "style", "staring", "domestic"
-        ]);
+        const limitedFiles = CAPE_FILES;
 
         for (const file of limitedFiles) {
           const hash = file.replace(".png", "");
           if (seen.has(hash)) continue;
           seen.add(hash);
 
-          const meta = metadata[hash];
-          let name = `Cloak #${hash.slice(0, 6)}`;
-          if (meta && meta.tags) {
-            const rawTags = meta.tags.split(" ");
-            const descriptiveTags = rawTags.filter((t: string) => !technicalTags.has(t.toLowerCase()));
-            name = descriptiveTags.length > 0
-              ? descriptiveTags.slice(0, 3).join(" ")
-              : rawTags.slice(0, 2).join(" ");
-          }
+          const name = `Cloak #${hash.slice(0, 6)}`;
 
           capes.push({
             id: file,
