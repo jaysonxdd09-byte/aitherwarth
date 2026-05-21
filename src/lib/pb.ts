@@ -2,8 +2,8 @@ import PocketBase from "pocketbase";
 
 export const pb = new PocketBase(
   typeof window !== "undefined"
-    ? (import.meta.env.VITE_PB_URL ?? "http://127.0.0.1:8090")
-    : "http://127.0.0.1:8090"
+    ? (import.meta.env.VITE_PB_PUBLIC_URL ?? "/api/pb")
+    : (import.meta.env.VITE_PB_URL ?? "http://127.0.0.1:8090")
 );
 
 pb.autoCancellation(false);
