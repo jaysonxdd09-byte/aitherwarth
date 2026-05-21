@@ -35,6 +35,7 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Close on ESC key
   useEffect(() => {
@@ -45,45 +46,59 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
 
+  const switchView = (v: "login" | "register" | "forgot") => {
+    setView(v);
+    setFormError(null);
+    setPassword("");
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     setLoading(true);
     try {
       if (view === "register") {
+        if (!username.trim()) throw new Error("Minecraft username is required.");
+        if (password.length < 8) throw new Error("Password must be at least 8 characters.");
         await pb.collection("users").create({
-          username,
-          email,
+          username: username.trim(),
+          email: email.trim(),
           password,
           passwordConfirm: password,
-          minecraft_ign: username,
+          minecraft_ign: username.trim(),
         });
-        // Auto login after register using email
-        const authData = await pb.collection("users").authWithPassword(email, password);
-        toast.success("Account created successfully!");
-        onLogin((authData.record["minecraft_ign"] as string) || (authData.record["username"] as string));
+        // Auto-login after register
+        const authData = await pb.collection("users").authWithPassword(email.trim(), password);
+        const ign = (authData.record["minecraft_ign"] as string) || username.trim();
+        toast.success(`Welcome to AitherWarth, ${ign}!`);
+        onLogin(ign);
+        setUsername(""); setEmail(""); setPassword("");
         onClose();
       } else if (view === "login") {
-        // PocketBase auth: identity = email
-        const authData = await pb.collection("users").authWithPassword(email, password);
-        toast.success(`Welcome back, ${authData.record["username"]}!`);
-        onLogin((authData.record["minecraft_ign"] as string) || (authData.record["username"] as string));
+        const authData = await pb.collection("users").authWithPassword(email.trim(), password);
+        const ign = (authData.record["minecraft_ign"] as string) || email.trim();
+        toast.success(`Welcome back, ${ign}!`);
+        onLogin(ign);
+        setEmail(""); setPassword("");
         onClose();
       } else if (view === "forgot") {
-        await pb.collection("users").requestPasswordReset(email);
-        toast.success("Reset link sent to your email!");
-        setView("login");
+        await pb.collection("users").requestPasswordReset(email.trim());
+        toast.success("Password reset link sent! Check your email.");
+        switchView("login");
       }
     } catch (err: unknown) {
-      toast.error(pbError(err));
+      const msg = pbError(err);
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}>
       <div 
         className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#161616]/80 p-8 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -167,12 +182,18 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
             <div className="flex justify-end">
               <button 
                 type="button" 
-                onClick={() => setView("forgot")}
+                onClick={() => switchView("forgot")}
                 className="text-xs font-medium text-white/30 hover:text-white/60 transition-colors"
               >
                 Forgot Password?
               </button>
             </div>
+          )}
+
+          {formError && (
+            <p className="rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-sm text-red-400 text-center">
+              {formError}
+            </p>
           )}
 
           <button
@@ -189,7 +210,7 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
             <>
               Don't have an account?{" "}
               <button 
-                onClick={() => setView("register")}
+                onClick={() => switchView("register")}
                 className="font-bold text-white hover:underline"
               >
                 Sign up
@@ -199,7 +220,7 @@ export function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
             <>
               Already have an account?{" "}
               <button 
-                onClick={() => setView("login")}
+                onClick={() => switchView("login")}
                 className="font-bold text-white hover:underline"
               >
                 Sign in
