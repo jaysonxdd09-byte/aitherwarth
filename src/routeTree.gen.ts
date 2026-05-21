@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiCapesRouteImport } from './routes/api.capes'
 import { Route as ApiCapeRouteImport } from './routes/api.cape'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCapesRoute = ApiCapesRouteImport.update({
+  id: '/api/capes',
+  path: '/api/capes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCapeRoute = ApiCapeRouteImport.update({
@@ -26,27 +32,31 @@ const ApiCapeRoute = ApiCapeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/cape': typeof ApiCapeRoute
+  '/api/capes': typeof ApiCapesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/cape': typeof ApiCapeRoute
+  '/api/capes': typeof ApiCapesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/cape': typeof ApiCapeRoute
+  '/api/capes': typeof ApiCapesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/cape'
+  fullPaths: '/' | '/api/cape' | '/api/capes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/cape'
-  id: '__root__' | '/' | '/api/cape'
+  to: '/' | '/api/cape' | '/api/capes'
+  id: '__root__' | '/' | '/api/cape' | '/api/capes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiCapeRoute: typeof ApiCapeRoute
+  ApiCapesRoute: typeof ApiCapesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/capes': {
+      id: '/api/capes'
+      path: '/api/capes'
+      fullPath: '/api/capes'
+      preLoaderRoute: typeof ApiCapesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cape': {
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiCapeRoute: ApiCapeRoute,
+  ApiCapesRoute: ApiCapesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
