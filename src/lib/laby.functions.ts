@@ -71,11 +71,19 @@ export async function getLabyCloaks(): Promise<{ capes: LabyCloak[]; error: stri
     return { capes: capesCache.data, error: null };
   }
   try {
-    const res = await fetch("/api/capes");
-    if (!res.ok) throw new Error(`/api/capes returned ${res.status}`);
-    const data = await res.json() as { capes: LabyCloak[]; error: string | null };
-    capesCache = { at: Date.now(), data: data.capes };
-    return data;
+    const all: LabyCloak[] = [];
+    let page = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const res = await fetch(`/api/capes?page=${page}`);
+      if (!res.ok) throw new Error(`/api/capes returned ${res.status}`);
+      const data = await res.json() as { capes: LabyCloak[]; hasMore: boolean; error: string | null };
+      all.push(...data.capes);
+      hasMore = data.hasMore;
+      page++;
+    }
+    capesCache = { at: Date.now(), data: all };
+    return { capes: all, error: null };
   } catch (e) {
     return { capes: [], error: e instanceof Error ? e.message : "Failed to load capes" };
   }
