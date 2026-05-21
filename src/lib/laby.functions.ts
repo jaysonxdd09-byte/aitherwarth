@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
-import { readFile } from "node:fs/promises";
 import PocketBase from "pocketbase";
+// These are bundled at build time by Vite — no filesystem access needed at runtime
+import capuIndexRaw from "../../public/capu-index.json";
+import cloaksMeta from "../../public/cloaks-meta.json";
 
 export interface LabyCloak {
   id: string;
@@ -78,39 +80,17 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       const capes: LabyCloak[] = [];
       const seen = new Set<string>();
 
-      // Load metadata — try multiple known paths
-      let metadata: Record<string, any> = {};
-      const metaPaths = [
-        "/var/www/aitherwarth/public/cloaks-meta.json",
-        "/var/www/aitherwarth/dist/client/cloaks-meta.json",
-        "./dist/client/cloaks-meta.json",
-      ];
-      for (const mp of metaPaths) {
-        try {
-          const raw = await readFile(mp, "utf-8");
-          const list = JSON.parse(raw);
-          if (Array.isArray(list)) {
-            list.forEach((item: any) => {
-              if (item.image_hash) metadata[item.image_hash] = item;
-            });
-            break;
-          }
-        } catch (_) {}
+      // Build metadata map from bundled JSON (imported at build time by Vite)
+      const metadata: Record<string, any> = {};
+      if (Array.isArray(cloaksMeta)) {
+        (cloaksMeta as any[]).forEach((item: any) => {
+          if (item.image_hash) metadata[item.image_hash] = item;
+        });
       }
 
-      // 1. Load cape file list from pre-generated index — try multiple known paths
-      const indexPaths = [
-        "/var/www/aitherwarth/public/capu-index.json",
-        "/var/www/aitherwarth/dist/client/capu-index.json",
-        "./dist/client/capu-index.json",
-      ];
-      let rawIndex: string | null = null;
-      for (const ip of indexPaths) {
-        try { rawIndex = await readFile(ip, "utf-8"); break; } catch (_) {}
-      }
-      if (!rawIndex) throw new Error("capu-index.json not found in any known path");
+      // 1. Load cape file list from bundled capu-index.json
       try {
-        const files = JSON.parse(rawIndex) as string[];
+        const files = capuIndexRaw as string[];
         const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 10000);
 
         const technicalTags = new Set([
