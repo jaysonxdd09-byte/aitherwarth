@@ -77,6 +77,10 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
     }
 
     try {
+      // DEBUG: test if function can return data at all
+      if (process.env["DEBUG_LABY"] === "1") {
+        return { capes: [{ id: "test.png", name: "Test Cape", renderUrl: "/capu/test.png", textureUrl: "/capu/test.png" }], error: null };
+      }
       cache = null; // Force clear cache for this request to ensure fresh paths
       const capes: LabyCloak[] = [];
       const seen = new Set<string>();
