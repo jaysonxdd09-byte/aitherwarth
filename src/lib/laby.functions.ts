@@ -13,12 +13,22 @@ export interface LabyCloak {
 const PB_URL = process.env["VITE_PB_URL"] ?? "http://127.0.0.1:8090";
 
 function getAppRoot(): string {
-  // In Cloudflare Workers runtime, process.cwd() returns '/' which is wrong
-  const cwd = process.cwd();
-  if (cwd === "/" || cwd === "") {
-    return process.env["APP_ROOT"] ?? "/var/www/aitherwarth";
+  // process.cwd() returns '/' in Cloudflare Workers nodejs_compat mode
+  // Try multiple candidate paths and return first that exists
+  const candidates = [
+    process.env["APP_ROOT"],
+    process.cwd() !== "/" ? process.cwd() : undefined,
+    "/var/www/aitherwarth",
+    "/home/ubuntu/aitherwarth",
+  ].filter(Boolean) as string[];
+
+  for (const p of candidates) {
+    try {
+      const fs = require("node:fs");
+      if (fs.existsSync(p + "/public/capu")) return p;
+    } catch (_) {}
   }
-  return process.env["APP_ROOT"] ?? cwd;
+  return candidates[0] ?? "/var/www/aitherwarth";
 }
 
 function adminPb() {
