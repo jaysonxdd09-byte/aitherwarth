@@ -11,7 +11,16 @@ export interface LabyCloak {
 }
 
 const PB_URL = process.env["VITE_PB_URL"] ?? "http://127.0.0.1:8090";
-const APP_ROOT = process.env["APP_ROOT"] ?? process.cwd();
+
+function getAppRoot(): string {
+  // In Cloudflare Workers runtime, process.cwd() returns '/' which is wrong
+  const cwd = process.cwd();
+  if (cwd === "/" || cwd === "") {
+    return process.env["APP_ROOT"] ?? "/var/www/aitherwarth";
+  }
+  return process.env["APP_ROOT"] ?? cwd;
+}
+const APP_ROOT = getAppRoot();
 
 function adminPb() {
   return new PocketBase(PB_URL);
