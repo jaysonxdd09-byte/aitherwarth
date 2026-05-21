@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { readFile } from "node:fs/promises";
 import PocketBase from "pocketbase";
 
 export interface LabyCloak {
@@ -77,25 +78,39 @@ export const getLabyCloaks = createServerFn({ method: "GET" }).handler(
       const capes: LabyCloak[] = [];
       const seen = new Set<string>();
 
-      // Load metadata from static JSON served by the app itself
+      // Load metadata — try multiple known paths
       let metadata: Record<string, any> = {};
-      try {
-        const metaRes = await fetch("http://localhost:3000/cloaks-meta.json");
-        if (metaRes.ok) {
-          const list = await metaRes.json() as any[];
+      const metaPaths = [
+        "/var/www/aitherwarth/public/cloaks-meta.json",
+        "/var/www/aitherwarth/dist/client/cloaks-meta.json",
+        "./dist/client/cloaks-meta.json",
+      ];
+      for (const mp of metaPaths) {
+        try {
+          const raw = await readFile(mp, "utf-8");
+          const list = JSON.parse(raw);
           if (Array.isArray(list)) {
             list.forEach((item: any) => {
               if (item.image_hash) metadata[item.image_hash] = item;
             });
+            break;
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
 
-      // 1. Load cape file list from pre-generated static index
+      // 1. Load cape file list from pre-generated index — try multiple known paths
+      const indexPaths = [
+        "/var/www/aitherwarth/public/capu-index.json",
+        "/var/www/aitherwarth/dist/client/capu-index.json",
+        "./dist/client/capu-index.json",
+      ];
+      let rawIndex: string | null = null;
+      for (const ip of indexPaths) {
+        try { rawIndex = await readFile(ip, "utf-8"); break; } catch (_) {}
+      }
+      if (!rawIndex) throw new Error("capu-index.json not found in any known path");
       try {
-        const indexRes = await fetch("http://localhost:3000/capu-index.json");
-        if (!indexRes.ok) throw new Error(`capu-index.json returned ${indexRes.status}`);
-        const files = await indexRes.json() as string[];
+        const files = JSON.parse(rawIndex) as string[];
         const limitedFiles = files.filter((f: string) => f.endsWith(".png") && f.length > 10).slice(0, 10000);
 
         const technicalTags = new Set([
