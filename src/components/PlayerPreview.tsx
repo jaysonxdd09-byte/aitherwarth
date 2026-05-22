@@ -62,8 +62,8 @@ export function PlayerPreview({ cape, ign, setIgn, onApply, applying = false }: 
     textureLoaderRef.current = new THREE.TextureLoader();
     const viewer = new skinview3d.SkinViewer({
       canvas: canvasRef.current,
-      width: 360,
-      height: 480,
+      width: 280,
+      height: 340,
       skin: SKIN_URL(ign || "Sethjuhh_"),
       // Optimize pixel ratio for performance
       pixelRatio: Math.min(window.devicePixelRatio, 2),
@@ -284,77 +284,77 @@ export function PlayerPreview({ cape, ign, setIgn, onApply, applying = false }: 
   };
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl lg:sticky lg:top-6 lg:w-[400px] lg:self-start shadow-2xl">
+    <aside className="flex w-full shrink-0 flex-col gap-2.5 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-2xl lg:sticky lg:top-6 lg:w-[320px] lg:self-start shadow-2xl">
       <div className="text-center">
-        <div className="text-xs font-medium uppercase tracking-widest text-white/40">In-Game Preview</div>
-        <div className="mt-1 truncate text-base font-bold text-white">{cape ? cape.name : "No cape selected"}</div>
+        <div className="text-[10px] font-medium uppercase tracking-widest text-white/40">In-Game Preview</div>
+        <div className="truncate text-sm font-bold text-white">{cape ? cape.name : "No cape selected"}</div>
       </div>
 
-      <div className="relative mx-auto overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-inner">
+      <div className="relative mx-auto overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-inner" style={{width:280,height:340}}>
         <canvas ref={canvasRef} className="block" />
         {loadingElytra && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <span className="mt-2 text-xs font-bold text-white uppercase tracking-widest">Loading...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="mt-1 text-xs font-bold text-white uppercase tracking-widest">Loading...</span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-2">
         <button
           onClick={() => { setSneak(!sneak); setSprint(false); setFlying(false); setElytra(false); }}
-          className={`flex flex-col items-center justify-center rounded-2xl border transition-all duration-300 py-3.5 ${sneak ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
+          className={`flex flex-col items-center justify-center rounded-xl border transition-all duration-300 py-2 ${sneak ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
           title="Sneak"
         >
-          <Footprints className="h-5 w-5" />
-          <span className="mt-1.5 text-[11px] font-bold">Sneak</span>
+          <Footprints className="h-4 w-4" />
+          <span className="mt-1 text-[10px] font-bold">Sneak</span>
         </button>
         <button
           onClick={() => { setSprint(!sprint); setSneak(false); setFlying(false); setElytra(false); }}
-          className={`flex flex-col items-center justify-center rounded-2xl border transition-all duration-300 py-3.5 ${sprint ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
+          className={`flex flex-col items-center justify-center rounded-xl border transition-all duration-300 py-2 ${sprint ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
           title="Sprint"
         >
-          <Wind className="h-5 w-5" />
-          <span className="mt-1.5 text-[11px] font-bold">Sprint</span>
+          <Wind className="h-4 w-4" />
+          <span className="mt-1 text-[10px] font-bold">Sprint</span>
         </button>
         <button
           onClick={() => { setFlying(!flying); setSneak(false); setSprint(false); setElytra(false); }}
-          className={`flex flex-col items-center justify-center rounded-2xl border transition-all duration-300 py-3.5 ${flying ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
+          className={`flex flex-col items-center justify-center rounded-xl border transition-all duration-300 py-2 ${flying ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
           title="Fly"
         >
-          <Plane className="h-5 w-5" />
-          <span className="mt-1.5 text-[11px] font-bold">Fly</span>
+          <Plane className="h-4 w-4" />
+          <span className="mt-1 text-[10px] font-bold">Fly</span>
         </button>
         <button
           onClick={toggleElytra}
-          className={`flex flex-col items-center justify-center rounded-2xl border transition-all duration-300 py-3.5 ${elytra ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
+          className={`flex flex-col items-center justify-center rounded-xl border transition-all duration-300 py-2 ${elytra ? "bg-primary/30 border-primary text-primary shadow-[0_0_20px_-5px_oklch(0.65_0.18_255_/_0.5)] scale-95" : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"}`}
           title="Elytra"
         >
-          <ShieldCheck className="h-5 w-5" />
-          <span className="mt-1.5 text-[11px] font-bold">Elytra</span>
+          <ShieldCheck className="h-4 w-4" />
+          <span className="mt-1 text-[10px] font-bold">Elytra</span>
         </button>
       </div>
 
-      <div className="flex gap-2.5">
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <input
             ref={inputRef}
             defaultValue={ign}
             onKeyDown={(e) => e.key === "Enter" && loadSkin()}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 pl-4 pr-10 py-2.5 text-sm outline-none transition-all focus:border-primary/50 focus:bg-white/10 text-white placeholder:text-white/30"
+            className="w-full rounded-xl border border-white/10 bg-white/5 pl-3 pr-8 py-2 text-xs outline-none transition-all focus:border-primary/50 focus:bg-white/10 text-white placeholder:text-white/30"
             placeholder="Minecraft IGN"
           />
-          <User className="absolute right-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-white/40" />
+          <User className="absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
         </div>
         <button
           onClick={loadSkin}
-          className="rounded-2xl border border-white/10 bg-white/10 px-5 py-2.5 text-sm font-bold text-white hover:bg-white/20 transition-all active:scale-95"
+          className="rounded-xl border border-white/10 bg-white/10 px-3.5 py-2 text-xs font-bold text-white hover:bg-white/20 transition-all active:scale-95"
         >
           Load
         </button>
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <div>
         <input
           type="file"
           ref={fileInputRef}
@@ -364,9 +364,9 @@ export function PlayerPreview({ cape, ign, setIgn, onApply, applying = false }: 
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center justify-center gap-2.5 rounded-2xl border border-white/10 border-dashed bg-white/5 px-4 py-3 text-sm font-bold text-white/80 hover:bg-white/10 transition-all active:scale-95"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 border-dashed bg-white/5 px-4 py-2 text-xs font-bold text-white/80 hover:bg-white/10 transition-all active:scale-95"
         >
-          <Upload className="h-4.5 w-4.5" />
+          <Upload className="h-3.5 w-3.5" />
           Upload Local Skin
         </button>
       </div>
@@ -374,7 +374,7 @@ export function PlayerPreview({ cape, ign, setIgn, onApply, applying = false }: 
       <button
         onClick={onApply}
         disabled={!cape || applying || justApplied}
-        className={`mt-1 rounded-2xl border px-4 py-4 text-base font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 ${
+        className={`rounded-xl border px-4 py-2.5 text-sm font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 ${
           justApplied
             ? "border-green-500/60 bg-green-500/30 shadow-[0_0_30px_-10px_rgba(34,197,94,0.8)] scale-[1.02]"
             : "border-primary/30 bg-primary/20 shadow-[0_0_30px_-10px_oklch(0.65_0.18_255_/_0.6)] hover:bg-primary/30 disabled:opacity-20"
@@ -389,8 +389,8 @@ export function PlayerPreview({ cape, ign, setIgn, onApply, applying = false }: 
         )}
       </button>
 
-      <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-        Scroll to zoom · drag to rotate · click to select · dblclick to apply
+      <p className="text-center text-[10px] leading-relaxed text-muted-foreground">
+        Scroll to zoom · drag to rotate · dblclick to apply
       </p>
     </aside>
   );
