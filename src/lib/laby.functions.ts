@@ -18,7 +18,9 @@ async function adminPb() {
   if (PB_ADMIN_EMAIL && PB_ADMIN_PASSWORD) {
     try {
       await pb.collection("_superusers").authWithPassword(PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD);
-    } catch (_) {}
+    } catch (_) {
+      // Continue without admin auth — collection rules allow unauthenticated access
+    }
   }
   return pb;
 }
