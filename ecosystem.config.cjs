@@ -11,6 +11,11 @@ module.exports = {
       max_restarts: 50,
       env: {
         NODE_ENV: "development",
+        VITE_PB_URL: "http://127.0.0.1:8090",
+        VITE_PB_PUBLIC_URL: "http://127.0.0.1:8090",
+        VITE_APP_URL: "http://localhost:8080",
+        VITE_PB_ADMIN_EMAIL: "admin@aitherwarth.local",
+        VITE_PB_ADMIN_PASSWORD: "AitherWarthPB2026!",
       },
     },
     {

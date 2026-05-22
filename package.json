@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "setup:pb": "node scripts/setup-pocketbase.mjs"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

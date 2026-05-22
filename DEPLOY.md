@@ -32,9 +32,12 @@ rm pocketbase_0.27.1_linux_amd64.zip
 
 ### 5. Set up PocketBase collections (run once)
 ```bash
-# The applied_capes collection and users fields are set up via the app's first run
-# Or visit http://YOUR_IP:8090/_/ after starting
+# With PocketBase running and superuser created in step 4:
+export PB_ADMIN_EMAIL=admin@yourdomain.com
+export PB_ADMIN_PASSWORD=YourPassword123!
+npm run setup:pb
 ```
+This creates the `applied_capes` collection, user cape fields, unique Minecraft username index, and sets the app URL for password-reset links. Add SMTP vars to `.env.local` (see `.env.example`) so forgot-password emails are delivered.
 
 ### 6. Build the app
 ```bash

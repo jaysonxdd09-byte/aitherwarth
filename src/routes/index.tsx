@@ -5,8 +5,18 @@ import { CATEGORIES, Cape, CapeCategory, loadCapes } from "@/lib/capes";
 import { CapeCard } from "@/components/CapeCard";
 import { PlayerPreview } from "@/components/PlayerPreview";
 import { AuthModal } from "@/components/AuthModal";
+import { AccountModal } from "@/components/AccountModal";
 import { pb } from "@/lib/pb";
 import { saveAppliedCape, getAppliedCape } from "@/lib/laby.functions";
+import {
+  capeFromApplied,
+  clearAppliedCapeCache,
+  loadAppliedCapeForUser,
+  minecraftIgnFromRecord,
+  readAppliedCapeCache,
+  saveAppliedCapeClient,
+  writeAppliedCapeCache,
+} from "@/lib/applied-cape";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,61 +44,61 @@ function Index() {
 
   // Restore session from PocketBase authStore on mount, and load applied cape
   useEffect(() => {
-    if (pb.authStore.isValid && pb.authStore.record) {
-      const rec = pb.authStore.record;
-      const name = (rec.minecraft_ign as string) || (rec.username as string);
-      setIgn(name);
-      setIsLoggedIn(true);
+    if (!pb.authStore.isValid || !pb.authStore.record) return;
 
-      // 1. Instantly restore from localStorage cache
-      const cached = localStorage.getItem(`applied_cape_${name.toLowerCase()}`);
-      if (cached) {
-        try {
-          const cape: Cape = JSON.parse(cached);
-          setAppliedCape(cape);
-        } catch (_) {}
+    const name = minecraftIgnFromRecord(pb.authStore.record as Record<string, unknown>);
+    setIgn(name);
+    setIsLoggedIn(true);
+
+    const cached = readAppliedCapeCache(name);
+    if (cached) setAppliedCape(cached);
+
+    void (async () => {
+      const fromPb = await loadAppliedCapeForUser(name);
+      if (fromPb) {
+        setAppliedCape(fromPb);
+        return;
       }
-
-      // 2. Fetch from PocketBase and update (overwrites cache if changed)
-      getAppliedCape({ data: name }).then(({ textureUrl }) => {
-        if (textureUrl) {
-          const cape: Cape = {
-            id: "applied",
-            name: "Your Cape",
-            category: "normal",
-            renderUrl: textureUrl,
-            textureUrl,
-          };
-          setAppliedCape(cape);
-          localStorage.setItem(`applied_cape_${name.toLowerCase()}`, JSON.stringify(cape));
-        }
-      }).catch(() => {});
-    }
+      const remote = await getAppliedCape({ data: name });
+      if (remote.textureUrl) {
+        const cape = capeFromApplied({
+          textureUrl: remote.textureUrl,
+          capeName: remote.capeName ?? "Your Cape",
+          capeCategory: remote.capeCategory ?? "normal",
+        });
+        setAppliedCape(cape);
+        writeAppliedCapeCache(name, cape);
+      }
+    })();
   }, []);
 
   const handleLogin = (username: string) => {
     setIgn(username);
     setIsLoggedIn(true);
     toast.success(`Logged in as ${username}`);
-    // Fetch previously applied cape for this user
-    getAppliedCape({ data: username }).then(({ textureUrl }) => {
-      if (textureUrl) {
-        setAppliedCape({
-          id: "applied",
-          name: "Your Cape",
-          category: "normal",
-          renderUrl: textureUrl,
-          textureUrl,
-        });
+    void (async () => {
+      const fromPb = await loadAppliedCapeForUser(username);
+      if (fromPb) {
+        setAppliedCape(fromPb);
+        return;
       }
-    }).catch(() => {});
+      const remote = await getAppliedCape({ data: username });
+      if (remote.textureUrl) {
+        setAppliedCape(
+          capeFromApplied({
+            textureUrl: remote.textureUrl,
+            capeName: remote.capeName ?? "Your Cape",
+            capeCategory: remote.capeCategory ?? "normal",
+          }),
+        );
+      }
+    })();
   };
 
   const handleLogout = () => {
-    // Clear cached cape for this user
     if (pb.authStore.record) {
-      const name = (pb.authStore.record["minecraft_ign"] as string) || (pb.authStore.record["username"] as string);
-      localStorage.removeItem(`applied_cape_${name.toLowerCase()}`);
+      const name = minecraftIgnFromRecord(pb.authStore.record as Record<string, unknown>);
+      clearAppliedCapeCache(name);
     }
     pb.authStore.clear();
     setIsLoggedIn(false);
@@ -138,30 +148,37 @@ function Index() {
   const isPanelCategory = category === "skinmc";
 
   const handleApply = async (cape: Cape) => {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || !pb.authStore.isValid) {
       toast.error("Please log in to apply a cape!");
       setIsAuthModalOpen(true);
       return;
     }
     setApplying(true);
     try {
-      const result = await saveAppliedCape({
-        data: {
-          username: ign,
-          textureUrl: cape.textureUrl,
-          capeName: cape.name,
-          capeCategory: cape.category,
-        },
-      });
+      let result = await saveAppliedCapeClient(ign, cape);
+
+      if (!result.success) {
+        result = await saveAppliedCape({
+          data: {
+            username: ign,
+            textureUrl: cape.textureUrl,
+            capeName: cape.name,
+            capeCategory: cape.category,
+            authToken: pb.authStore.token,
+            authRecord: pb.authStore.record as Record<string, unknown>,
+          },
+        });
+      }
+
       if (result.success) {
         setAppliedCape(cape);
-        // Cache in localStorage so it survives refresh instantly
-        localStorage.setItem(`applied_cape_${ign.toLowerCase()}`, JSON.stringify(cape));
+        setSelected(null);
+        writeAppliedCapeCache(ign, cape);
         toast.success(`Cape "${cape.name}" applied and saved!`);
       } else {
-        toast.error(result.error ?? "Failed to save cape.");
+        toast.error(result.error ?? "Failed to save cape to PocketBase.");
       }
-    } catch (e) {
+    } catch {
       toast.error("Failed to apply cape. Is PocketBase running?");
     } finally {
       setApplying(false);
@@ -180,8 +197,12 @@ function Index() {
       {/* Floating Header */}
       <div className="px-4 pt-5 lg:px-10 relative z-50">
         <header className="mx-auto flex max-w-[1600px] items-center justify-between rounded-3xl border border-white/10 bg-white/5 px-6 py-4 backdrop-blur-2xl shadow-2xl">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="AitherWarth" className="h-10 w-10 rounded-xl object-cover shadow-lg border border-white/10" />
+          <div className="flex items-center gap-4">
+            <img
+              src="/logo.png"
+              alt="AitherWarth"
+              className="h-16 w-16 rounded-2xl object-cover shadow-lg border border-white/10"
+            />
             <span className="font-bold tracking-tight text-xl bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">AitherWarth</span>
           </div>
           <nav className="hidden items-center gap-2 text-sm font-medium md:flex">
@@ -207,9 +228,9 @@ function Index() {
                   onClick={() => setAccountOpen(true)}
                   className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-white/10"
                 >
-                  <div className="h-6 w-6 rounded-full overflow-hidden bg-white/10">
-                    <img 
-                      src={`https://minotar.net/avatar/${ign}/24`} 
+                  <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-white/10 border border-white/10">
+                    <img
+                      src={`https://minotar.net/avatar/${ign}/36`}
                       alt={ign}
                       className="h-full w-full object-cover"
                     />
@@ -258,7 +279,10 @@ function Index() {
           cape={selected ?? appliedCape}
           ign={ign}
           setIgn={setIgn}
-          onApply={() => selected && handleApply(selected)}
+          onApply={() => {
+            const toApply = selected ?? appliedCape;
+            if (toApply) void handleApply(toApply);
+          }}
           applying={applying}
         />
 
@@ -346,23 +370,11 @@ function Index() {
 
 
       {accountOpen && (
-        <Modal onClose={() => setAccountOpen(false)} title="My Account">
-          <dl className="space-y-2 text-sm">
-            {[
-              ["Minecraft IGN", ign || "-"],
-              ["Discord ID", "-"],
-              ["Tier", "Free"],
-              ["Current Cape", selected?.name ?? "-"],
-              ["Renewal Expiring at", "-"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between border-b border-border/60 py-1.5">
-                <dt className="text-muted-foreground">{k}</dt>
-                <dd className="font-medium">{v}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-3 text-xs text-muted-foreground">Account details are loaded from cache and refreshed from API.</p>
-        </Modal>
+        <AccountModal
+          ign={ign}
+          appliedCape={appliedCape}
+          onClose={() => setAccountOpen(false)}
+        />
       )}
 
       <AuthModal 
